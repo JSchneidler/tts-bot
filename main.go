@@ -6,6 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/joho/godotenv"
 )
 
 type Say struct {
@@ -80,6 +81,13 @@ var (
 )
 
 func main() {
+	var err error
+
+	err = godotenv.Load()
+	if err != nil {
+		log.Printf("Failed to load .env")
+	}
+
 	bot_token := os.Getenv(bot_token_env)
 	server_id := os.Getenv(discord_server_id)
 	channel_id := os.Getenv(allowed_channel_id)
@@ -91,7 +99,7 @@ func main() {
 
 	discord, _ := discordgo.New("Bot " + bot_token)
 
-	err := discord.Open()
+	err = discord.Open()
 	if err != nil {
 		log.Panicf("could not open session: %s", err)
 	}
