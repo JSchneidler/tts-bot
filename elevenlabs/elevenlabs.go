@@ -1,6 +1,7 @@
 package elevenlabs
 
 import (
+	"log"
 	"os"
 
 	"github.com/go-resty/resty/v2"
@@ -13,17 +14,21 @@ var api_base = "https://api.elevenlabs.io/v1"
 
 var default_voice_id = "YmkIUFWsIp3y1ScFnXsd"
 
-type VoiceSettings struct {
+type voiceSettings struct {
 	Stability       float32 `json:"stability"`
 	SimilarityBoost float32 `json:"similarity_boost"`
 	Style           float32 `json:"style"`
 	UseSpeakerBoost bool    `json:"use_speaker_boost"`
 }
 
-type TtsBody struct {
+type ttsBody struct {
 	Text          string        `json:"text"`
 	ModelId       string        `json:"model_id"`
-	VoiceSettings VoiceSettings `json:"voice_settings"`
+	VoiceSettings voiceSettings `json:"voice_settings"`
+}
+
+type sfxBody struct {
+	Text string `json:"text"`
 }
 
 func get_client() *resty.Client {
@@ -38,11 +43,11 @@ func get_voices() (*resty.Response, error) {
 	return resp, err
 }
 
-func tts(text string, voice_id string, output_path string) (string, error) {
-	tts_body := TtsBody{
+func Tts(text string, voice_id string) (mp3_data []byte, err error) {
+	tts_body := ttsBody{
 		Text:    text,
 		ModelId: "eleven_multilingual_v2",
-		VoiceSettings: VoiceSettings{
+		VoiceSettings: voiceSettings{
 			Stability:       0.5,
 			SimilarityBoost: 0.8,
 			Style:           0.0,
@@ -50,10 +55,33 @@ func tts(text string, voice_id string, output_path string) (string, error) {
 		},
 	}
 
+	if voice_id == "" {
+		voice_id = default_voice_id
+	}
+
+	log.Printf("Calling ElevenLabs TTS: (%s) %s", voice_id, text)
+
 	client := get_client()
 	resp, err := client.R().SetBody(tts_body).Post(api_base + "/text-to-speech/" + voice_id)
 
-	_ = os.WriteFile(output_path, resp.Body(), 0644)
+	if resp.StatusCode() == 200 {
+		return resp.Body(), nil
+	}
+	return []byte{}, err
+}
 
-	return output_path, err
+func Sfx(text string) (mp3_data []byte, err error) {
+	sfx_body := sfxBody{
+		Text: text,
+	}
+
+	log.Printf("Calling ElevenLabs SFX: %s", text)
+
+	client := get_client()
+	resp, err := client.R().SetBody(sfx_body).Post(api_base + "/sound-generation/")
+
+	if resp.StatusCode() == 200 {
+		return resp.Body(), nil
+	}
+	return []byte{}, err
 }

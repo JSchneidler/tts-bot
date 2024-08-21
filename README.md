@@ -1,8 +1,13 @@
 # TTS Bot
 A TTS bot written in Go supporting a few TTS APIs.
 
-Supports:
+Currently supports:
 - ElevenLabs
+
+# Dependencies
+- Go
+- FFmpeg
+- DCA
 
 # Environment
 Supports .env file or standard environment variables. Currently all these must be set.  
