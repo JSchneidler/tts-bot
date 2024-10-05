@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"elevenlabs"
+	"ttsmonster"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/google/uuid"
@@ -37,16 +38,7 @@ var (
 					Name:        "voice",
 					Description: "Which voice to use",
 					Type:        discordgo.ApplicationCommandOptionString,
-					Choices: []*discordgo.ApplicationCommandOptionChoice{
-						{
-							Name:  "Default",
-							Value: "default",
-						},
-						{
-							Name:  "Second",
-							Value: "second",
-						},
-					},
+					Choices:     toCommandOptions(ttsmonster.Voices),
 				},
 			},
 		},
@@ -75,20 +67,8 @@ var (
 			})
 		},
 		"test": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
-			mp3_data, err := os.ReadFile("4d6aa57c-ab0e-43c9-ac4a-869f9f3de1e6.mp3")
-			if err != nil {
-				log.Println("Failed to load mp3.", err)
-				return
-			}
-
-			dca_data, err := convert(mp3_data)
-			if err != nil {
-				log.Println("Failed to convert mp3.", err)
-				return
-			}
-
 			vs, _ := s.State.VoiceState(server_id, i.Member.User.ID)
-			playSound(s, vs.ChannelID, dca_data)
+			playSound(s, vs.ChannelID, "f15b66cf-3cee-455f-8751-2f06910e7a39.wav")
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -98,6 +78,7 @@ var (
 			})
 		},
 		"say": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			vs, _ := s.State.VoiceState(server_id, i.Member.User.ID)
 			options := i.ApplicationCommandData().Options
 
 			text := options[0].StringValue()
@@ -109,24 +90,15 @@ var (
 
 			log.Printf("%s(%s) used /say: (%s) %s", i.Member.User.GlobalName, i.Member.User.Username, voice_id, text)
 
-			uuid := uuid.New()
+			uuid := uuid.NewString()
 
-			mp3_data, err := elevenlabs.Sfx(text)
+			wav_data, err := ttsmonster.Tts(text, voice_id)
 			if err == nil {
-				mp3_path := uuid.String() + ".mp3"
-				os.WriteFile(mp3_path, mp3_data, 0644)
-				log.Println(mp3_path)
+				wav_path := uuid + ".wav"
+				os.WriteFile(wav_path, wav_data, 0644)
+				log.Println(wav_path)
+				playSound(s, vs.ChannelID, wav_path)
 			}
-
-			dca_data, err := convert(mp3_data)
-			if err == nil {
-				dca_path := uuid.String() + ".dca"
-				os.WriteFile(dca_path, dca_data, 0644)
-				log.Println(dca_path)
-			}
-
-			vs, _ := s.State.VoiceState(server_id, i.Member.User.ID)
-			playSound(s, vs.ChannelID, dca_data)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -136,29 +108,22 @@ var (
 			})
 		},
 		"sfx": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			vs, _ := s.State.VoiceState(server_id, i.Member.User.ID)
 			options := i.ApplicationCommandData().Options
+
 			text := options[0].StringValue()
 
 			log.Printf("%s(%s) used /sfx: %s", i.Member.User.GlobalName, i.Member.User.Username, text)
 
-			uuid := uuid.New()
+			uuid := uuid.NewString()
 
 			mp3_data, err := elevenlabs.Sfx(text)
 			if err == nil {
-				mp3_path := uuid.String() + ".mp3"
+				mp3_path := uuid + ".mp3"
 				os.WriteFile(mp3_path, mp3_data, 0644)
 				log.Println(mp3_path)
+				playSound(s, vs.ChannelID, mp3_path)
 			}
-
-			dca_data, err := convert(mp3_data)
-			if err == nil {
-				dca_path := uuid.String() + ".dca"
-				os.WriteFile(dca_path, dca_data, 0644)
-				log.Println(dca_path)
-			}
-
-			vs, _ := s.State.VoiceState(server_id, i.Member.User.ID)
-			playSound(s, vs.ChannelID, dca_data)
 
 			s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -169,3 +134,16 @@ var (
 		},
 	}
 )
+
+func toCommandOptions(voices []ttsmonster.Voice) []*discordgo.ApplicationCommandOptionChoice {
+	commandOptions := []*discordgo.ApplicationCommandOptionChoice{}
+
+	for _, voice := range voices {
+		commandOptions = append(commandOptions, &discordgo.ApplicationCommandOptionChoice{
+			Name:  voice.Name,
+			Value: voice.VoiceID,
+		})
+	}
+
+	return commandOptions
+}

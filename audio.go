@@ -2,9 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
+	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -15,20 +19,18 @@ var dca_path = os.Getenv(dca_path_env)
 
 var CHUNK_SIZE = 8
 
-// var buffer = make([][]byte, 0)
+var buffer = make([][]byte, 0)
 
 // ffmpeg -i file.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | dca
-func convert(mp3_data []byte) (dca_data []byte, err error) {
+func convert(input_path string) (output_path string, err error) {
 	args := []string{
-		"-i", "pipe:",
-		//"-f", "s16le",
-		"-f", "mp3",
+		"-i", input_path,
+		"-f", "s16le",
 		"-ar", "48000",
 		"-ac", "2",
 		"pipe:1",
 	}
 	ffmpeg := exec.Command("ffmpeg", args...)
-	ffmpeg.Stdin = bytes.NewReader(mp3_data)
 	ffmpeg_out, err := ffmpeg.Output()
 	if err != nil {
 		log.Println("ffpmeg failed.", err)
@@ -41,78 +43,58 @@ func convert(mp3_data []byte) (dca_data []byte, err error) {
 		log.Println("dca failed.", err)
 	}
 
-	return dca_out, err
+	i := strings.Index(input_path, ".")
+	path := input_path[:i] + ".dca"
+	os.WriteFile(path, dca_out, 0644)
+	return path, err
 }
 
-// func convert(mp3_path string) (dca_path string, err error) {
-// 	encodeSession, err := dca.EncodeFile(mp3_path, dca.StdEncodeOptions)
-// 	if err != nil {
-// 		log.Println(err)
-// 		return "", err
-// 	}
-// 	defer encodeSession.Cleanup()
+func loadSound(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println("Error opening dca file :", err)
+		return err
+	}
 
-// 	output, err := os.Create(mp3_path + ".dca")
-// 	if err != nil {
-// 		log.Println(err)
-// 		return "", err
-// 	}
+	var opuslen int16
 
-// 	copied, err := io.Copy(output, encodeSession)
-// 	if err != nil {
-// 		log.Println(err)
-// 		return "", err
-// 	}
-// 	log.Println(copied)
+	for {
+		// Read opus frame length from dca file.
+		err = binary.Read(file, binary.LittleEndian, &opuslen)
 
-// 	return output.Name(), nil
-// }
+		// If this is the end of the file, just return.
+		if err == io.EOF || err == io.ErrUnexpectedEOF {
+			err := file.Close()
+			if err != nil {
+				return err
+			}
+			return nil
+		}
 
-// func loadSound() error {
-// 	//file, err := os.Open("4d6aa57c-ab0e-43c9-ac4a-869f9f3de1e6.mp3.dca")
-// 	file, err := os.Open("test.dca")
-// 	if err != nil {
-// 		fmt.Println("Error opening dca file :", err)
-// 		return err
-// 	}
+		if err != nil {
+			fmt.Println("Error reading from dca file :", err)
+			return err
+		}
 
-// 	var opuslen int16
+		// Read encoded pcm from dca file.
+		InBuf := make([]byte, opuslen)
+		err = binary.Read(file, binary.LittleEndian, &InBuf)
 
-// 	for {
-// 		// Read opus frame length from dca file.
-// 		err = binary.Read(file, binary.LittleEndian, &opuslen)
+		// Should not be any end of file errors
+		if err != nil {
+			fmt.Println("Error reading from dca file :", err)
+			return err
+		}
 
-// 		// If this is the end of the file, just return.
-// 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-// 			err := file.Close()
-// 			if err != nil {
-// 				return err
-// 			}
-// 			return nil
-// 		}
+		// Append encoded pcm data to the buffer.
+		buffer = append(buffer, InBuf)
+	}
+}
 
-// 		if err != nil {
-// 			fmt.Println("Error reading from dca file :", err)
-// 			return err
-// 		}
-
-// 		// Read encoded pcm from dca file.
-// 		InBuf := make([]byte, opuslen)
-// 		err = binary.Read(file, binary.LittleEndian, &InBuf)
-
-// 		// Should not be any end of file errors
-// 		if err != nil {
-// 			fmt.Println("Error reading from dca file :", err)
-// 			return err
-// 		}
-
-// 		// Append encoded pcm data to the buffer.
-// 		buffer = append(buffer, InBuf)
-// 	}
-// }
-
-func playSound(s *discordgo.Session, channelID string, dca_data []byte) (err error) {
-	// loadSound()
+// playSound plays the current buffer to the provided channel.
+func playSound(s *discordgo.Session, channelID string, mp3_path string) error {
+	output_path, err := convert(mp3_path)
+	err = loadSound(output_path)
 
 	// Join the provided voice channel.
 	vc, err := s.ChannelVoiceJoin(server_id, channelID, false, true)
@@ -127,15 +109,8 @@ func playSound(s *discordgo.Session, channelID string, dca_data []byte) (err err
 	vc.Speaking(true)
 
 	// Send the buffer data.
-	// for _, buff := range buffer {
-	// 	vc.OpusSend <- buff
-	// }
-	for i := 0; i < len(dca_data); i += CHUNK_SIZE {
-		end := i + CHUNK_SIZE
-		if end > len(dca_data) {
-			end = len(dca_data)
-		}
-		vc.OpusSend <- dca_data[i:end]
+	for _, buff := range buffer {
+		vc.OpusSend <- buff
 	}
 
 	// Stop speaking

@@ -34,6 +34,7 @@ type sfxBody struct {
 func get_client() *resty.Client {
 	client := resty.New()
 	client.Header.Add("xi-api-key", api_key)
+	client.Header.Add("content-type", "application/json")
 	return client
 }
 
@@ -64,10 +65,11 @@ func Tts(text string, voice_id string) (mp3_data []byte, err error) {
 	client := get_client()
 	resp, err := client.R().SetBody(tts_body).Post(api_base + "/text-to-speech/" + voice_id)
 
-	if resp.StatusCode() == 200 {
-		return resp.Body(), nil
+	if resp.StatusCode() != 200 {
+		return []byte{}, err
 	}
-	return []byte{}, err
+
+	return resp.Body(), nil
 }
 
 func Sfx(text string) (mp3_data []byte, err error) {
@@ -78,10 +80,11 @@ func Sfx(text string) (mp3_data []byte, err error) {
 	log.Printf("Calling ElevenLabs SFX: %s", text)
 
 	client := get_client()
-	resp, err := client.R().SetBody(sfx_body).Post(api_base + "/sound-generation/")
+	resp, err := client.R().SetBody(&sfx_body).Post(api_base + "/sound-generation/")
 
-	if resp.StatusCode() == 200 {
-		return resp.Body(), nil
+	if resp.StatusCode() != 200 {
+		return []byte{}, err
 	}
-	return []byte{}, err
+
+	return resp.Body(), nil
 }

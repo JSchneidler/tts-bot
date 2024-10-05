@@ -1,4 +1,4 @@
-package elevenlabs
+package ttsmonster
 
 import (
 	"testing"
@@ -31,7 +31,7 @@ func TestApi(t *testing.T) {
 }
 
 func TestTts(t *testing.T) {
-	_, err := Tts("Test", default_voice_id)
+	_, err := Tts("Testing TTS bot", Voices[0].VoiceID)
 
 	if err != nil {
 		t.Fatal(err)

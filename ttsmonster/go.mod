@@ -1,4 +1,4 @@
-module elevenlabs
+module ttsmonster
 
 go 1.23.1
 

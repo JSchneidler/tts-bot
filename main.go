@@ -17,12 +17,12 @@ type Say struct {
 var _ = godotenv.Load()
 
 var (
-	bot_token_env      = "DISCORD_BOT_TOKEN"
-	discord_server_id  = "DISCORD_SERVER_ID"
-	allowed_channel_id = "DISCORD_ALLOWED_CHANNEL_ID"
+	bot_token_env          = "DISCORD_BOT_TOKEN"
+	discord_server_id_env  = "DISCORD_SERVER_ID"
+	allowed_channel_id_env = "DISCORD_ALLOWED_CHANNEL_ID"
 
-	server_id  = os.Getenv(discord_server_id)
-	channel_id = os.Getenv(allowed_channel_id)
+	server_id  = os.Getenv(discord_server_id_env)
+	channel_id = os.Getenv(allowed_channel_id_env)
 
 	remove_commands = false
 )
