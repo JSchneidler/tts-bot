@@ -15,7 +15,7 @@ func Test_add_user(t *testing.T) {
 }
 
 func Test_add_usage(t *testing.T) {
-	err := add_usage(Usage{123, "tts", "test", "test_prompt", "test_path.mp3"})
+	err := add_usage(Usage{1, AUDIO_TYPE_TTS, AUDIO_SERVICE_TTSMONSTER, "test_prompt", "test_path.mp3"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -23,8 +23,7 @@ func Test_add_usage(t *testing.T) {
 
 func Test_AddUsage(t *testing.T) {
 	user := DiscordUser{discord_id, discord_name}
-	usage := Usage{0, "tts", "test_svc", "test_prompt", "test.mp3"}
-	AddUsage(user, usage)
+	AddUsage(user, Usage{1, AUDIO_TYPE_TTS, AUDIO_SERVICE_TTSMONSTER, "A bunch of blah blah blah more more more wah wah wah", "test_path.mp3"})
 	// if err != nil {
 	// 	t.Fatal(err)
 	// }

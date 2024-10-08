@@ -14,7 +14,8 @@ import (
 
 var (
 	defaultMemberPermission int64 = discordgo.PermissionManageChannels
-	commands                      = []*discordgo.ApplicationCommand{
+
+	commands = []*discordgo.ApplicationCommand{
 		{
 			Name:        "info",
 			Description: "Bot info",
@@ -114,7 +115,7 @@ var (
 			if err == nil {
 				sound_path := saveSound(wav_data, "wav")
 				user := DiscordUser{ID: i.Member.User.ID, Name: i.Member.User.GlobalName}
-				usage := Usage{AudioType: "tts", AudioService: "TTSMonster", Prompt: text, AudioFilename: filepath.Base(sound_path)}
+				usage := Usage{AudioType: AUDIO_TYPE_TTS, AudioService: AUDIO_SERVICE_TTSMONSTER, Prompt: text, AudioFilename: filepath.Base(sound_path)}
 				AddUsage(user, usage)
 				playSound(s, vs.ChannelID, sound_path)
 			}
@@ -137,7 +138,7 @@ var (
 			if err == nil {
 				sound_path := saveSound(mp3_data, "mp3")
 				user := DiscordUser{ID: i.Member.User.ID, Name: i.Member.User.GlobalName}
-				usage := Usage{AudioType: "sfx", AudioService: "ElevenLabs", Prompt: text, AudioFilename: filepath.Base(sound_path)}
+				usage := Usage{AudioType: AUDIO_TYPE_SFX, AudioService: AUDIO_SERVICE_ELEVENLABS, Prompt: text, AudioFilename: filepath.Base(sound_path)}
 				AddUsage(user, usage)
 				playSound(s, vs.ChannelID, sound_path)
 			}
