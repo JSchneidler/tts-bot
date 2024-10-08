@@ -8,10 +8,12 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/google/uuid"
 )
 
 var dca_path_env = "DCA_PATH"
@@ -20,6 +22,16 @@ var dca_path = os.Getenv(dca_path_env)
 var CHUNK_SIZE = 8
 
 var buffer = make([][]byte, 0)
+
+func saveSound(audio_data []byte, format string) string {
+	uuid := uuid.NewString()
+	sound_path := path.Join(audio_path, uuid+"."+format)
+
+	os.WriteFile(sound_path, audio_data, 0644)
+	log.Println(sound_path)
+
+	return sound_path
+}
 
 // ffmpeg -i file.mp3 -f s16le -ar 48000 -ac 2 pipe:1 | dca
 func convert(input_path string) (output_path string, err error) {
@@ -95,6 +107,8 @@ func loadSound(path string) error {
 func playSound(s *discordgo.Session, channelID string, mp3_path string) error {
 	output_path, err := convert(mp3_path)
 	err = loadSound(output_path)
+
+	log.Println(output_path)
 
 	// Join the provided voice channel.
 	vc, err := s.ChannelVoiceJoin(server_id, channelID, false, true)

@@ -9,28 +9,32 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Say struct {
-	Voice string
-	Text  string
-}
-
 var _ = godotenv.Load()
 
 var (
+	audio_path_env         = "AUDIO_PATH"
+	db_path_env            = "DB_PATH"
 	bot_token_env          = "DISCORD_BOT_TOKEN"
 	discord_server_id_env  = "DISCORD_SERVER_ID"
 	allowed_channel_id_env = "DISCORD_ALLOWED_CHANNEL_ID"
 
+	audio_path = os.Getenv(audio_path_env)
+	db_path    = os.Getenv(db_path_env)
+
+	bot_token  = os.Getenv(bot_token_env)
 	server_id  = os.Getenv(discord_server_id_env)
 	channel_id = os.Getenv(allowed_channel_id_env)
 
 	remove_commands = false
 )
 
+type DiscordUser struct {
+	ID   string
+	Name string
+}
+
 func main() {
 	var err error
-
-	bot_token := os.Getenv(bot_token_env)
 
 	if len(bot_token) == 0 {
 		log.Panicf(bot_token_env + " not set")

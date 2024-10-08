@@ -22,15 +22,15 @@ import (
 // 	godotenv.Load("../.env")
 // }
 
-func TestApi(t *testing.T) {
-	_, err := get_voices()
+func Test_GetVoices(t *testing.T) {
+	_, err := GetVoices()
 
 	if err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestTts(t *testing.T) {
+func Test_Tts(t *testing.T) {
 	_, err := Tts("Test", default_voice_id)
 
 	if err != nil {

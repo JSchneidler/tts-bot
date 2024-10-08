@@ -3,4 +3,5 @@
 *.mp3
 *.wav
 *.dca
+*.sqlite3
 ttsbot

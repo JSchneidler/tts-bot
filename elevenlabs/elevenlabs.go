@@ -38,7 +38,7 @@ func get_client() *resty.Client {
 	return client
 }
 
-func get_voices() (*resty.Response, error) {
+func GetVoices() (*resty.Response, error) {
 	client := get_client()
 	resp, err := client.R().Get(api_base + "/voices")
 	return resp, err
@@ -80,7 +80,7 @@ func Sfx(text string) (mp3_data []byte, err error) {
 	log.Printf("Calling ElevenLabs SFX: %s", text)
 
 	client := get_client()
-	resp, err := client.R().SetBody(&sfx_body).Post(api_base + "/sound-generation/")
+	resp, err := client.R().SetBody(sfx_body).Post(api_base + "/sound-generation")
 
 	if resp.StatusCode() != 200 {
 		return []byte{}, err
